@@ -1,5 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import type { ethers, ContractFactory, Contract, Signer } from 'ethers';
+import { utils, BigNumber } from 'ethers';
 
 import { Manifest, getAdminAddress, getCode, isEmptySlot } from '@openzeppelin/upgrades-core';
 
@@ -59,8 +60,17 @@ export function makeUpgradeProxy(hre: HardhatRuntimeEnvironment): UpgradeFunctio
         throw new Error('Proxy admin is not the one registered in the network manifest');
       }
 
+      const gasArgs = {
+        maxFeePerGas: utils.parseUnits('250', 'gwei'),
+        maxPriorityFeePerGas: utils.parseUnits('50', 'gwei'),
+        gasLimit: BigNumber.from(4000000),
+      };
+      console.log('gasArgs', gasArgs);
+
       return (nextImpl, call) =>
-        call ? admin.upgradeAndCall(proxyAddress, nextImpl, call) : admin.upgrade(proxyAddress, nextImpl);
+        call
+          ? admin.upgradeAndCall(proxyAddress, nextImpl, call, gasArgs)
+          : admin.upgrade(proxyAddress, nextImpl, gasArgs);
     }
   }
 }
